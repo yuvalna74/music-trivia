@@ -3,7 +3,6 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
-import { createServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import { redis } from './lib/redis.js';
 import { soloRoutes } from './routes/solo.js';
@@ -39,8 +38,8 @@ await fastify.register(leaderboardRoutes);
 await fastify.register(multiplayerHostRoutes);
 await fastify.register(multiplayerTeamRoutes);
 
-const httpServer = createServer(fastify.server);
-const io = new SocketIOServer(httpServer, {
+// Attach socket.io to Fastify's underlying HTTP server before starting
+const io = new SocketIOServer(fastify.server, {
   cors: { origin: FRONTEND_URL, credentials: true },
   transports: ['websocket', 'polling'],
 });
@@ -49,9 +48,8 @@ registerMultiplayerSocket(io);
 
 await redis.connect();
 
-httpServer.listen(PORT, '0.0.0.0', () => {
-  console.log(`Backend listening on port ${PORT}`);
-});
+await fastify.listen({ port: PORT, host: '0.0.0.0' });
+console.log(`Backend listening on port ${PORT}`);
 
 process.on('SIGTERM', async () => {
   await fastify.close();
