@@ -12,15 +12,14 @@ export async function GET(request: Request) {
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.exchangeCodeForSession(code);
+  const { data: { session }, error } = await supabase.auth.exchangeCodeForSession(code);
 
-  if (error) {
+  if (error || !session) {
     return NextResponse.redirect(`${origin}/login?error=auth_failed`);
   }
 
   // Check Spotify Premium
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.provider_token) {
+  if (!session.provider_token) {
     await supabase.auth.signOut();
     return NextResponse.redirect(`${origin}/login?error=no_provider_token`);
   }
