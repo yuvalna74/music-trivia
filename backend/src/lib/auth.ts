@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
 import type { FastifyRequest, FastifyReply } from 'fastify';
+import { supabase } from './supabase.js';
 
-const SUPABASE_JWT_SECRET = process.env.SUPABASE_JWT_SECRET!;
 const TEAM_TOKEN_SECRET = process.env.TEAM_TOKEN_SECRET!;
 
 export type AuthenticatedUser = {
@@ -40,11 +40,11 @@ export async function dualAuthMiddleware(
     return reply.status(401).send({ error: 'No authorization token' });
   }
 
-  // Try Supabase JWT first
+  // Try Supabase JWT first (using admin client — no secret needed)
   try {
-    const payload = jwt.verify(token, SUPABASE_JWT_SECRET) as jwt.JwtPayload;
-    if (payload.sub && payload.role === 'authenticated') {
-      req.user = { type: 'authenticated', id: payload.sub, email: payload.email as string };
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+    if (!error && user) {
+      req.user = { type: 'authenticated', id: user.id, email: user.email };
       return;
     }
   } catch {
