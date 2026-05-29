@@ -17,10 +17,11 @@ function LoginContent() {
   const supabase = createClient();
 
   async function handleLogin() {
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin;
     await supabase.auth.signInWithOAuth({
       provider: 'spotify',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: `${siteUrl}/auth/callback`,
         scopes:
           'user-read-email user-read-private streaming user-modify-playback-state user-read-playback-state',
       },
